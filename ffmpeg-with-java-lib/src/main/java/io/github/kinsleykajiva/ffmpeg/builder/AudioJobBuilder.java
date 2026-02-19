@@ -1,9 +1,11 @@
 package io.github.kinsleykajiva.ffmpeg.builder;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import io.github.kinsleykajiva.ffmpeg.execution.FFmpegCallback;
 import io.github.kinsleykajiva.ffmpeg.execution.FFmpegExecutor;
@@ -34,6 +36,7 @@ public class AudioJobBuilder {
     private final java.util.Map<String, String> metadataTags = new java.util.HashMap<>();
     private long timeoutSeconds = 0;
     private Double readRate;
+    private Consumer<Path> sdpCallback;
 
     public AudioJobBuilder(String inputPath, String outputPath) {
         this.inputPath = inputPath;
@@ -148,6 +151,14 @@ public class AudioJobBuilder {
     }
 
     /**
+     * Callback triggered when the SDP file is successfully created.
+     */
+    public AudioJobBuilder onSdpCreated(Consumer<java.nio.file.Path> callback) {
+        this.sdpCallback = callback;
+        return this;
+    }
+
+    /**
      * Sets a metadata tag (e.g., title, artist, album).
      */
     public AudioJobBuilder withMetadata(String key, String value) {
@@ -160,7 +171,11 @@ public class AudioJobBuilder {
      */
     public io.github.kinsleykajiva.ffmpeg.model.EncodingResult execute() {
         validate();
-        return FFmpegExecutor.execute(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        io.github.kinsleykajiva.ffmpeg.model.EncodingResult result = FFmpegExecutor.execute(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        if (sdpPath != null && sdpCallback != null && java.nio.file.Files.exists(sdpPath)) {
+            sdpCallback.accept(sdpPath);
+        }
+        return result;
     }
 
     /**
@@ -168,7 +183,23 @@ public class AudioJobBuilder {
      */
     public CompletableFuture<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> executeAsync() {
         validate();
-        return FFmpegExecutor.executeAsync(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        CompletableFuture<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> future = FFmpegExecutor.executeAsync(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        
+        // If an SDP callback is registered, we should check for the file shortly after start
+        if (sdpPath != null && sdpCallback != null) {
+            CompletableFuture.runAsync(() -> {
+                // Poll for SDP file existence for up to 5 seconds
+                for (int i = 0; i < 50; i++) {
+                    if (java.nio.file.Files.exists(sdpPath)) {
+                        sdpCallback.accept(sdpPath);
+                        break;
+                    }
+                    try { Thread.sleep(100); } catch (InterruptedException e) { break; }
+                }
+            });
+        }
+        
+        return future;
     }
 
     /**

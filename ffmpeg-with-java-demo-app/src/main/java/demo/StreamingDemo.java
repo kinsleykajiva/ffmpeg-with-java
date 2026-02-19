@@ -31,7 +31,11 @@ public class StreamingDemo {
                 .withBitrate("96k")
                 .withNetworkConfig(new NetworkConfig(32, 2*1024*1024, true, 5005))
                 .toStream(StreamDestination.rtp("127.0.0.1", 5004))
-                .saveSdpTo(Path.of(sdpPath))
+                .saveSdpTo(Path.of("media-files/stream.sdp"))
+                .onSdpCreated(path -> {
+                    IO.println("✅ SDP file created at: " + path.toAbsolutePath());
+                    IO.println("You can now open this file in VLC to listen to the stream.");
+                })
                 .onStreamStats((br, speed, dropped) -> {
                     IO.print("\r  Stream Stats: " + (br/1000) + " kbps | Speed: " + speed + "x   ");
                     IO.println(" | Dropped Packets: " + dropped);
@@ -48,8 +52,7 @@ public class StreamingDemo {
                     return null;
                 }).join();
             
-            IO.println("SDP file generated at: " + sdpPath);
-            IO.println("You can open this SDP file in VLC to listen to the stream.");
+            
 
         } catch (Exception e) {
             System.err.println("Streaming demo error: " + e.getMessage());
