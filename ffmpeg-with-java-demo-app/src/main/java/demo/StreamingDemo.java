@@ -33,22 +33,23 @@ public class StreamingDemo {
                 .toStream(StreamDestination.rtp("127.0.0.1", 5004))
                 .saveSdpTo(Path.of(sdpPath))
                 .onStreamStats((br, speed, dropped) -> {
-                    System.out.print("\r  Stream Stats: " + (br/1000) + " kbps | Speed: " + speed + "x   ");
+                    IO.print("\r  Stream Stats: " + (br/1000) + " kbps | Speed: " + speed + "x   ");
+                    IO.println(" | Dropped Packets: " + dropped);
                     if (speed < 1.0) System.err.print(" [NETWORK LAG] ");
                 })
                // .timeout(10) // Stream for 10 seconds
                 .executeAsync()
                 .handle((res, ex) -> {
                     if (ex != null && ex.getCause() instanceof TimeoutException) {
-                        System.out.println("\r\nStreaming session finished successfully (timeout reached).");
+                        IO.println("\r\nStreaming session finished successfully (timeout reached).");
                     } else if (ex != null) {
-                        System.err.println("\r\nStreaming failed: " + ex.getMessage());
+                        IO.println("\r\nStreaming failed: " + ex.getMessage());
                     }
                     return null;
                 }).join();
-
-            System.out.println("SDP file generated at: " + sdpPath);
-            System.out.println("You can open this SDP file in VLC to listen to the stream.");
+            
+            IO.println("SDP file generated at: " + sdpPath);
+            IO.println("You can open this SDP file in VLC to listen to the stream.");
 
         } catch (Exception e) {
             System.err.println("Streaming demo error: " + e.getMessage());
