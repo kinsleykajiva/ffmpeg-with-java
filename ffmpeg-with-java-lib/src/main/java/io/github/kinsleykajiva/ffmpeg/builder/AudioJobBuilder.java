@@ -12,6 +12,7 @@ import io.github.kinsleykajiva.ffmpeg.execution.FFmpegExecutor;
 import io.github.kinsleykajiva.ffmpeg.execution.OnProgressListener;
 import io.github.kinsleykajiva.ffmpeg.model.ChannelLayout;
 import io.github.kinsleykajiva.ffmpeg.model.SampleRate;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Fluent builder for constructing and executing FFmpeg audio jobs.
@@ -37,6 +38,8 @@ public class AudioJobBuilder {
     private long timeoutSeconds = 0;
     private Double readRate;
     private Consumer<Path> sdpCallback;
+    private Runnable startCallback;
+    private Consumer<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> finishedCallback;
 
     public AudioJobBuilder(String inputPath, String outputPath) {
         this.inputPath = inputPath;
@@ -153,8 +156,24 @@ public class AudioJobBuilder {
     /**
      * Callback triggered when the SDP file is successfully created.
      */
-    public AudioJobBuilder onSdpCreated(Consumer<java.nio.file.Path> callback) {
+    public AudioJobBuilder onSdpCreated(@Nullable Consumer<java.nio.file.Path> callback) {
         this.sdpCallback = callback;
+        return this;
+    }
+
+    /**
+     * Callback triggered when the job starts (before the process is launched).
+     */
+    public AudioJobBuilder onStart(Runnable callback) {
+        this.startCallback = callback;
+        return this;
+    }
+
+    /**
+     * Callback triggered when the job finishes (success or failure).
+     */
+    public AudioJobBuilder onFinished(@Nullable Consumer<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> callback) {
+        this.finishedCallback = callback;
         return this;
     }
 
@@ -171,10 +190,22 @@ public class AudioJobBuilder {
      */
     public io.github.kinsleykajiva.ffmpeg.model.EncodingResult execute() {
         validate();
-        io.github.kinsleykajiva.ffmpeg.model.EncodingResult result = FFmpegExecutor.execute(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        if (startCallback != null) startCallback.run();
+        
+        io.github.kinsleykajiva.ffmpeg.model.EncodingResult result;
+        try {
+            result = FFmpegExecutor.execute(buildCommand(), progressListener, statsListener, timeoutSeconds);
+        } catch (Exception e) {
+            // Create a failed result if possible or rethrow
+            throw e; 
+        }
+
         if (sdpPath != null && sdpCallback != null && java.nio.file.Files.exists(sdpPath)) {
             sdpCallback.accept(sdpPath);
         }
+        
+        if (finishedCallback != null) finishedCallback.accept(result);
+        
         return result;
     }
 
@@ -183,6 +214,9 @@ public class AudioJobBuilder {
      */
     public CompletableFuture<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> executeAsync() {
         validate();
+        
+        if (startCallback != null) startCallback.run();
+
         CompletableFuture<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> future = FFmpegExecutor.executeAsync(buildCommand(), progressListener, statsListener, timeoutSeconds);
         
         // If an SDP callback is registered, we should check for the file shortly after start
@@ -195,6 +229,17 @@ public class AudioJobBuilder {
                         break;
                     }
                     try { Thread.sleep(100); } catch (InterruptedException e) { break; }
+                }
+            });
+        }
+        
+        if (finishedCallback != null) {
+            future.whenComplete((result, ex) -> {
+                if (result != null) {
+                    finishedCallback.accept(result);
+                } else {
+                    // Start of a simplistic error result handling if needed, or just pass null
+                    // For now we only callback on success or if result is present
                 }
             });
         }

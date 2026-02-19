@@ -33,11 +33,19 @@ public class StreamingDemo {
                 .toStream(StreamDestination.rtp("127.0.0.1", 5004))
                 .saveSdpTo(Path.of("media-files/stream.sdp"))
                 .onSdpCreated(path -> {
-                    IO.println("✅ SDP file created at: " + path.toAbsolutePath());
-                    IO.println("You can now open this file in VLC to listen to the stream.");
+                    System.out.println("✅ SDP file created at: " + path.toAbsolutePath());
+                    System.out.println("You can now open this file in VLC to listen to the stream.");
                 })
-                .onStreamStats((br, speed, dropped) -> {
-                    IO.print("\r  Stream Stats: " + (br/1000) + " kbps | Speed: " + speed + "x   ");
+                .onStart(() -> System.out.println("🚀 Stream process starting..."))
+                .onFinished(result -> {
+                    System.out.println("\n🏁 Stream finished.");
+                    if (result != null) {
+                        System.out.println("   Duration: " + result.timeTakenMillis() + "ms");
+                        System.out.println("   Input processed: " + result.finalFileSize() + " bytes (approx)");
+                    }
+                })
+                .onStreamStats((bitrate, speed, dropped) -> {
+                    IO.print("\r  Stream Stats: " + (bitrate/1000) + " kbps | Speed: " + speed + "x   ");
                     IO.println(" | Dropped Packets: " + dropped);
                     if (speed < 1.0) System.err.print(" [NETWORK LAG] ");
                 })
