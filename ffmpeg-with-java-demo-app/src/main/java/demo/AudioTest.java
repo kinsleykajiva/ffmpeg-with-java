@@ -16,6 +16,8 @@ public class AudioTest {
         // Run all demos sequentially
         MetadataDemo.main(args);
         System.out.println("\n-----------------------------------\n");
+        ComprehensiveMetadataDemo.main(args);
+        System.out.println("\n-----------------------------------\n");
         ValidationDemo.main(args);
         System.out.println("\n-----------------------------------\n");
         TranscodingDemo.main(args);

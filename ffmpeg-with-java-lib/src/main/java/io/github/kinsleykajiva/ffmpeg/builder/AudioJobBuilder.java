@@ -35,6 +35,7 @@ public class AudioJobBuilder {
     private boolean useWallclock = false;
     private Long probeSize;
     private Long analyzeDuration;
+    private final java.util.Map<String, String> metadataTags = new java.util.HashMap<>();
     private long timeoutSeconds = 0;
 
     public AudioJobBuilder(String inputPath, String outputPath) {
@@ -137,6 +138,14 @@ public class AudioJobBuilder {
 
     public AudioJobBuilder timeout(long seconds) {
         this.timeoutSeconds = seconds;
+        return this;
+    }
+
+    /**
+     * Sets a metadata tag (e.g., title, artist, album).
+     */
+    public AudioJobBuilder withMetadata(String key, String value) {
+        this.metadataTags.put(key, value);
         return this;
     }
 
@@ -263,6 +272,12 @@ public class AudioJobBuilder {
         if (sdpPath != null) {
             cmd.add("-sdp_file");
             cmd.add(sdpPath.toString());
+        }
+
+        // Metadata Tags
+        for (java.util.Map.Entry<String, String> entry : metadataTags.entrySet()) {
+            cmd.add("-metadata");
+            cmd.add(entry.getKey() + "=" + entry.getValue());
         }
 
         // Output

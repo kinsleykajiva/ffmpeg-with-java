@@ -39,3 +39,4 @@ build/
 .DS_Store
 ffmpeg-with-java-lib/FFmpeg
 ffmpeg-with-java-lib/ffmpeg-builds
+maven.txt

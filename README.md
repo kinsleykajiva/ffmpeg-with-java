@@ -115,6 +115,7 @@ FFmpeg.input("live_input.wav")
 
 We provide modular demo classes in the `demo` package for easy exploration:
 - **`MetadataDemo`**: Shows Project Panama-based probing of MP3/WAV info.
+- **`ComprehensiveMetadataDemo`**: Demonstrates reading and **setting** (writing) audio tags like Title, Artist, and Album.
 - **`TranscodingDemo`**: Demonstrates the fluent builder with filters and async execution.
 - **`StreamingDemo`**: Showcases RTP streaming with real-time stats monitoring.
 - **`ValidationDemo`**: Highlights the safety checks for paths, bitrates, and volume.
