@@ -20,9 +20,10 @@ import io.github.kinsleykajiva.ffmpeg.model.EncodingResult;
  */
 public class FFmpegExecutor {
 
-    // Regex to parse FFmpeg's progress output from stderr
+    // Regex to parse FFmpeg's progress output. Works for both video and audio-only streams.
+    // Captures: frame (optional), bitrate, and speed.
     private static final Pattern PROGRESS_PATTERN = Pattern.compile(
-        "frame=\\s*(\\d+).*bitrate=\\s*([\\d\\.]+)kbits/s.*speed=\\s*([\\d\\.]+)x"
+        "(?:frame=\\s*(\\d+)|(?:size|time|out_time)=\\s*\\S+).*bitrate=\\s*([\\d\\.]+)kbits/s.*speed=\\s*([\\d\\.]+)x"
     );
 
     /**
@@ -48,7 +49,9 @@ public class FFmpegExecutor {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
-                        parseAndNotify(line, progressListener, statsListener);
+                        if (!parseAndNotify(line, progressListener, statsListener)) {
+                            System.out.println(line);
+                        }
                     }
                 } catch (Exception ignored) {}
             });
@@ -114,11 +117,12 @@ public class FFmpegExecutor {
         return executeAsync(args, progressListener, statsListener, 0);
     }
 
-    private static void parseAndNotify(String line, OnProgressListener progress, OnStreamStatsListener stats) {
+    private static boolean parseAndNotify(String line, OnProgressListener progress, OnStreamStatsListener stats) {
         Matcher matcher = PROGRESS_PATTERN.matcher(line);
         if (matcher.find()) {
             try {
-                long frame = Long.parseLong(matcher.group(1));
+                String frameStr = matcher.group(1);
+                long frame = (frameStr != null) ? Long.parseLong(frameStr) : 0;
                 double bitrateKbps = Double.parseDouble(matcher.group(2));
                 double speed = Double.parseDouble(matcher.group(3));
 
@@ -129,7 +133,9 @@ public class FFmpegExecutor {
                 if (stats != null) {
                     stats.onStatsUpdate((long)(bitrateKbps * 1000), speed, 0);
                 }
+                return true;
             } catch (Exception ignored) {}
         }
+        return false;
     }
 }

@@ -36,7 +36,7 @@ public class StreamingDemo {
                     System.out.print("\r  Stream Stats: " + (br/1000) + " kbps | Speed: " + speed + "x   ");
                     if (speed < 1.0) System.err.print(" [NETWORK LAG] ");
                 })
-                .timeout(10) // Stream for 10 seconds
+               // .timeout(10) // Stream for 10 seconds
                 .executeAsync()
                 .handle((res, ex) -> {
                     if (ex != null && ex.getCause() instanceof TimeoutException) {

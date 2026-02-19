@@ -240,6 +240,7 @@ public class AudioJobBuilder {
         }
 
         cmd.add("-y"); // Overwrite
+        cmd.add("-stats"); // Periodically print progress
         cmd.add("-i");
         cmd.add(inputPath);
 
