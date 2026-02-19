@@ -81,141 +81,117 @@ public class FFmpeg {
         return null;
     }
 
-    private String inputPath;
-    private String outputPath;
+    private final String inputPath;
 
     private FFmpeg(String inputPath) {
         this.inputPath = inputPath;
     }
 
+    /**
+     * Entry point for specifying an input file for metadata probing or processing.
+     * Validates that the input path is non-null and points to an existing, readable file.
+     * 
+     * @param path The path to the input file.
+     * @return A new FFmpeg instance.
+     * @throws IllegalArgumentException if path is null or file is not accessible.
+     */
     public static FFmpeg input(String path) {
+        if (path == null) {
+            throw new IllegalArgumentException("Input path cannot be null.");
+        }
+        java.io.File file = new java.io.File(path);
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Input file does not exist: " + path);
+        }
+        if (!file.canRead()) {
+            throw new IllegalArgumentException("Input file is not readable: " + path);
+        }
         return new FFmpeg(path);
     }
 
-    public FFmpeg output(String path) {
-        this.outputPath = path;
-        return this;
-    }
-
     /**
-     * Probes the input file for metadata.
+     * Probes the input file for metadata and returns a structured record.
+     * 
+     * @return AudioMetadata containing format, duration, bitrate, etc.
+     * @throws io.github.kinsleykajiva.ffmpeg.exception.FFmpegException if file cannot be opened
      */
-    public Map<String, String> probe() {
-        Map<String, String> metadataMap = new HashMap<>();
+    public io.github.kinsleykajiva.ffmpeg.model.AudioMetadata probe() {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment ppFormatCtx = arena.allocate(ValueLayout.ADDRESS);
             MemorySegment pathSegment = arena.allocateFrom(inputPath);
 
-            if (avformat_open_input(ppFormatCtx, pathSegment, MemorySegment.NULL, MemorySegment.NULL) == 0) {
-                // Reinterpret the pointer with the correct struct size
-                MemorySegment pFormatCtx = ppFormatCtx.get(ValueLayout.ADDRESS, 0)
-                        .reinterpret(AVFormatContext.layout().byteSize());
+            if (avformat_open_input(ppFormatCtx, pathSegment, MemorySegment.NULL, MemorySegment.NULL) != 0) {
+                throw new io.github.kinsleykajiva.ffmpeg.exception.ExecutionException(-1, "Could not open input file: " + inputPath);
+            }
 
-                if (avformat_find_stream_info(pFormatCtx, MemorySegment.NULL) >= 0) {
-                    MemorySegment metadata = AVFormatContext.metadata(pFormatCtx);
-                    if (!metadata.equals(MemorySegment.NULL)) {
-                        MemorySegment entry = MemorySegment.NULL;
-                        while (true) {
-                            entry = av_dict_get(metadata, arena.allocateFrom(""), entry, AV_DICT_IGNORE_SUFFIX());
-                            if (entry.equals(MemorySegment.NULL)) break;
-                            entry = entry.reinterpret(AVDictionaryEntry.layout().byteSize());
-                            
-                            String key = AVDictionaryEntry.key(entry).getString(0);
-                            String value = AVDictionaryEntry.value(entry).getString(0);
-                            metadataMap.put(key, value);
-                        }
+            // Reinterpret the pointer with the correct struct size
+            MemorySegment pFormatCtx = ppFormatCtx.get(ValueLayout.ADDRESS, 0)
+                    .reinterpret(AVFormatContext.layout().byteSize());
+
+            try {
+                if (avformat_find_stream_info(pFormatCtx, MemorySegment.NULL) < 0) {
+                    throw new io.github.kinsleykajiva.ffmpeg.exception.ExecutionException(-1, "Could not find stream info for: " + inputPath);
+                }
+
+                String format = AVInputFormat.name(AVFormatContext.iformat(pFormatCtx)).getString(0);
+                double duration = AVFormatContext.duration(pFormatCtx) / (double) AV_TIME_BASE();
+                long bitrate = AVFormatContext.bit_rate(pFormatCtx);
+
+                // Extract tags
+                Map<String, String> tags = new HashMap<>();
+                MemorySegment metadata = AVFormatContext.metadata(pFormatCtx);
+                if (!metadata.equals(MemorySegment.NULL)) {
+                    MemorySegment entry = MemorySegment.NULL;
+                    while (true) {
+                        entry = av_dict_get(metadata, arena.allocateFrom(""), entry, AV_DICT_IGNORE_SUFFIX());
+                        if (entry.equals(MemorySegment.NULL)) break;
+                        entry = entry.reinterpret(AVDictionaryEntry.layout().byteSize());
+                        
+                        String key = AVDictionaryEntry.key(entry).getString(0);
+                        String value = AVDictionaryEntry.value(entry).getString(0);
+                        tags.put(key, value);
                     }
                 }
+
+                // Simplified: assuming audio for now
+                return new io.github.kinsleykajiva.ffmpeg.model.AudioMetadata(
+                    format,
+                    duration,
+                    bitrate,
+                    0, // Default sample rate if not found in context directly
+                    "unknown", // Default channel layout
+                    tags
+                );
+            } finally {
                 avformat_close_input(ppFormatCtx);
             }
         }
-        return metadataMap;
     }
 
     /**
-     * Converts the input file to the output format using the bundled ffmpeg executable.
-     * The output format is determined by the file extension of the output path.
+     * Starts building an audio job for the current input.
+     * This replaces the old convert() method with a fluent builder.
      */
-    public boolean convert() {
-        if (inputPath == null || outputPath == null) {
-            throw new IllegalStateException("Input and Output paths must be set.");
-        }
-        System.out.println("Converting " + inputPath + " to " + outputPath + "...");
-        return performConversion();
+    public io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder output(String outputPath) {
+        return new io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder(inputPath, outputPath);
     }
 
     /**
-     * Finds the ffmpeg executable — first checks PATH, then falls back to the
-     * bundled ffmpeg-builds/win64/bin directory.
+     * Starts a live streaming builder directly.
      */
-    private static java.io.File resolveFfmpegExe() {
-        // Check PATH first
-        for (String dir : System.getenv("PATH").split(java.io.File.pathSeparator)) {
-            java.io.File candidate = new java.io.File(dir.trim(), "ffmpeg.exe");
-            if (candidate.isFile()) return candidate;
-            // Also try without .exe on non-Windows (just in case)
-            candidate = new java.io.File(dir.trim(), "ffmpeg");
-            if (candidate.isFile()) return candidate;
-        }
-        // Fall back to bundled binary
-        java.io.File binDir = resolveFallbackBinDir();
-        if (binDir != null) {
-            java.io.File exe = new java.io.File(binDir, "ffmpeg.exe");
-            if (exe.isFile()) return exe;
-        }
-        return null;
+    public io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder asLiveSource() {
+        return new io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder(inputPath, null).asLiveSource();
     }
 
     /**
-     * Actually converts the file by invoking the ffmpeg executable.
-     * Uses: ffmpeg -y -i <input> <output>
-     * The -y flag overwrites the output if it already exists.
+     * Starts a streaming builder targeting a specific destination.
      */
-    private boolean performConversion() {
-        java.io.File ffmpegExe = resolveFfmpegExe();
-        if (ffmpegExe == null) {
-            System.err.println("ffmpeg executable not found in PATH or bundled bin directory.");
-            return false;
-        }
-
-        try {
-            // Ensure the output directory exists
-            java.io.File outputFile = new java.io.File(outputPath);
-            if (outputFile.getParentFile() != null) {
-                outputFile.getParentFile().mkdirs();
-            }
-
-            ProcessBuilder pb = new ProcessBuilder(
-                    ffmpegExe.getAbsolutePath(),
-                    "-y",           // overwrite output without asking
-                    "-i", inputPath,
-                    outputPath
-            );
-            pb.redirectErrorStream(true); // merge stderr into stdout
-
-            Process process = pb.start();
-
-            // Capture and optionally print ffmpeg output
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(
-                    new java.io.InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Uncomment the line below to see full ffmpeg output:
-                    // System.out.println("[ffmpeg] " + line);
-                }
-            }
-
-            int exitCode = process.waitFor();
-            if (exitCode == 0 && outputFile.exists() && outputFile.length() > 0) {
-                return true;
-            } else {
-                System.err.println("ffmpeg exited with code " + exitCode + ". Output file was not created or is empty.");
-                return false;
-            }
-        } catch (Exception e) {
-            System.err.println("Conversion error: " + e.getMessage());
-            return false;
-        }
+    public io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder toStream(io.github.kinsleykajiva.ffmpeg.model.StreamDestination destination) {
+        return new io.github.kinsleykajiva.ffmpeg.builder.AudioJobBuilder(inputPath, null).toStream(destination);
     }
+
+    // Deprecated methods for backward compatibility if needed, 
+    // but moving towards the new builder pattern.
 }
+
 
