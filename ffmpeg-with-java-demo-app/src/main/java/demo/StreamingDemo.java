@@ -24,6 +24,8 @@ public class StreamingDemo {
             
             FFmpeg.input(inputPath)
                 .asLiveSource()                      // -re, fflags nobuffer
+                .withWallclock(false)                // Ensure no wallclock interference
+                .withReadRate(1.0)                   // Precise 1.0x pacing
                 .withInstantStartup()                // near-zero probe/analyze
                 .withCodec(AudioCodec.LIBOPUS)
                 .withBitrate("96k")

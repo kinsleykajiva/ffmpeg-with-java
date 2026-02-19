@@ -1,19 +1,15 @@
 package io.github.kinsleykajiva.ffmpeg.builder;
 
-import io.github.kinsleykajiva.ffmpeg.FFmpegBinary;
-import io.github.kinsleykajiva.ffmpeg.execution.FFmpegCallback;
-import io.github.kinsleykajiva.ffmpeg.execution.FFmpegExecutor;
-import io.github.kinsleykajiva.ffmpeg.execution.OnProgressListener;
-import io.github.kinsleykajiva.ffmpeg.model.AudioCodec;
-import io.github.kinsleykajiva.ffmpeg.model.ChannelLayout;
-import io.github.kinsleykajiva.ffmpeg.model.EncodingResult;
-import io.github.kinsleykajiva.ffmpeg.model.SampleRate;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+
+import io.github.kinsleykajiva.ffmpeg.execution.FFmpegCallback;
+import io.github.kinsleykajiva.ffmpeg.execution.FFmpegExecutor;
+import io.github.kinsleykajiva.ffmpeg.execution.OnProgressListener;
+import io.github.kinsleykajiva.ffmpeg.model.ChannelLayout;
+import io.github.kinsleykajiva.ffmpeg.model.SampleRate;
 
 /**
  * Fluent builder for constructing and executing FFmpeg audio jobs.
@@ -37,6 +33,7 @@ public class AudioJobBuilder {
     private Long analyzeDuration;
     private final java.util.Map<String, String> metadataTags = new java.util.HashMap<>();
     private long timeoutSeconds = 0;
+    private Double readRate;
 
     public AudioJobBuilder(String inputPath, String outputPath) {
         this.inputPath = inputPath;
@@ -48,10 +45,19 @@ public class AudioJobBuilder {
      */
     public AudioJobBuilder asLiveSource() {
         this.isLiveSource = true;
-        this.useWallclock = true; // Default for live sources
+        this.useWallclock = false; // safer default for file-to-rtp
         if (this.networkConfig == null) {
             this.networkConfig = io.github.kinsleykajiva.ffmpeg.model.NetworkConfig.defaultLowLatency();
         }
+        return this;
+    }
+
+    /**
+     * Sets the read rate speed (e.g., 1.0 for real-time).
+     * Uses -readrate flag.
+     */
+    public AudioJobBuilder withReadRate(double rate) {
+        this.readRate = rate;
         return this;
     }
 
@@ -216,7 +222,13 @@ public class AudioJobBuilder {
         }
         
         if (isLiveSource) {
-            cmd.add("-re"); // Read input at native frame rate
+            if (readRate != null) {
+                cmd.add("-readrate");
+                cmd.add(String.valueOf(readRate));
+            } else {
+                cmd.add("-re"); // Read input at native frame rate
+            }
+
             if (useWallclock) {
                 cmd.add("-use_wallclock_as_timestamps");
                 cmd.add("1");
