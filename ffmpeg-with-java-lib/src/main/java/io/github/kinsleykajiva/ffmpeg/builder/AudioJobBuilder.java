@@ -162,7 +162,7 @@ public class AudioJobBuilder {
      */
     public CompletableFuture<io.github.kinsleykajiva.ffmpeg.model.EncodingResult> executeAsync() {
         validate();
-        return FFmpegExecutor.executeAsync(buildCommand(), progressListener, statsListener);
+        return FFmpegExecutor.executeAsync(buildCommand(), progressListener, statsListener, timeoutSeconds);
     }
 
     /**
@@ -287,6 +287,11 @@ public class AudioJobBuilder {
                 // For RTP, we add rtcpport as a query param or part of the URI logic
                 // FFmpeg expects: rtp://host:port?rtcpport=...
                 uri += (uri.contains("?") ? "&" : "?") + "rtcpport=" + networkConfig.rtcpport();
+            }
+            // FFmpeg cannot infer the muxer from rtp:// alone — must specify -f rtp explicitly
+            if (uri.startsWith("rtp://")) {
+                cmd.add("-f");
+                cmd.add("rtp");
             }
             cmd.add(uri);
         } else {

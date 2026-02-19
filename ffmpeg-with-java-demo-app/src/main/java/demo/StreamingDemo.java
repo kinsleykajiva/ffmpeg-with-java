@@ -17,7 +17,8 @@ public class StreamingDemo {
         String sdpPath = "media-files/stream.sdp";
 
         System.out.println("=== FFmpeg Real-Time Streaming Demo ===");
-
+        FFmpeg.setBinPath("C:\\Users\\Kinsley\\IdeaProjects\\ffmpeg-with-java-demo\\ffmpeg-with-java-lib\\ffmpeg-builds\\win64\\bin");
+        
         try {
             System.out.println("Starting RTP stream to 127.0.0.1:5004...");
             
