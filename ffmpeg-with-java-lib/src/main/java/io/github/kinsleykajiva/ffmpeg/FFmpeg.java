@@ -1,6 +1,8 @@
 package io.github.kinsleykajiva.ffmpeg;
 
 import static io.github.kinsleykajiva.ffmpeg.ffmpeg_includes_h.*;
+
+import java.io.File;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -25,23 +27,37 @@ public class FFmpeg {
         // Optional: avdevice is only needed for camera/microphone device I/O
         String[] optionalLibs = {"avdevice-62"};
 
-        java.io.File binDir = resolveFallbackBinDir();
+        File binDir = resolveFallbackBinDir();
 
         // Load required libraries
         for (String lib : requiredLibs) {
             if (!loadSingleLib(lib, binDir)) {
                 System.err.println("Failed to load required FFmpeg library: " + lib);
-                System.err.println("Tip: set -Djava.library.path=<path-to-ffmpeg-bin> in your VM options.");
+                if (FFmpegBinary.getBinPath() == null) {
+                    System.err.println("Tip: Use FFmpeg.setBinPath(\"path/to/bin\") or set -Djava.library.path.");
+                } else {
+                    System.err.println("Current FFmpeg.setBinPath: " + FFmpegBinary.getBinPath());
+                }
                 return;
             }
         }
 
-        // Load optional libraries — failure is silently ignored
+        // Load optional libraries
         for (String lib : optionalLibs) {
-            loadSingleLib(lib, binDir); // ignore return value
+            loadSingleLib(lib, binDir);
         }
 
         librariesLoaded = true;
+    }
+
+    /**
+     * Programmatically sets the path to FFmpeg binaries and libraries.
+     * This must be called before any FFmpeg operations.
+     */
+    public static void setBinPath(String path) {
+        FFmpegBinary.setBinPath(path);
+        // Force refresh libraries if not loaded yet
+        loadLibraries();
     }
 
     private static boolean loadSingleLib(String lib, java.io.File binDir) {
@@ -51,7 +67,8 @@ public class FFmpeg {
         } catch (UnsatisfiedLinkError e1) {
             if (binDir != null && binDir.exists()) {
                 try {
-                    System.load(new java.io.File(binDir, lib + ".dll").getAbsolutePath());
+                    String ext = System.getProperty("os.name").toLowerCase().contains("win") ? ".dll" : ".so";
+                    System.load(new java.io.File(binDir, lib + ext).getAbsolutePath());
                     return true;
                 } catch (UnsatisfiedLinkError e2) {
                     // both paths failed
@@ -61,11 +78,13 @@ public class FFmpeg {
         return false;
     }
 
-    /**
-     * Resolves the FFmpeg bin directory relative to this class's code source location.
-     * Walks up to the project root and looks for ffmpeg-builds/win64/bin.
-     */
     private static java.io.File resolveFallbackBinDir() {
+        // 1. Check custom path if set
+        if (io.github.kinsleykajiva.ffmpeg.FFmpegBinary.getBinPath() != null) {
+            return new java.io.File(io.github.kinsleykajiva.ffmpeg.FFmpegBinary.getBinPath());
+        }
+
+        // 2. Fall back to auto-detection
         try {
             java.net.URL codeSource = FFmpeg.class.getProtectionDomain().getCodeSource().getLocation();
             java.io.File classLocation = new java.io.File(codeSource.toURI());

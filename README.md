@@ -119,6 +119,7 @@ We provide modular demo classes in the `demo` package for easy exploration:
 - **`TranscodingDemo`**: Demonstrates the fluent builder with filters and async execution.
 - **`StreamingDemo`**: Showcases RTP streaming with real-time stats monitoring.
 - **`ValidationDemo`**: Highlights the safety checks for paths, bitrates, and volume.
+- **`ConfigDemo`**: Demonstrates programmatic configuration of FFmpeg binary paths.
 
 ---
 
@@ -127,6 +128,14 @@ We provide modular demo classes in the `demo` package for easy exploration:
 ### Prerequisites
 *   Java 22+ (Java 25 recommended)
 *   Maven
+
+### Configuration
+By default, the library looks for FFmpeg in the system `PATH` or a bundled `ffmpeg-builds` directory. For production environments, you can explicitly set the binary path:
+
+```java
+FFmpeg.setBinPath("C:/Custom/FFmpeg/bin"); 
+// Validates presence of ffmpeg.exe, ffprobe.exe, and required DLLs immediately.
+```
 
 ### Running the Demos
 Ensure you use the following JVM flags for native access:
