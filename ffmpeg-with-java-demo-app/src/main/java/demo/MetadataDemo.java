@@ -8,6 +8,9 @@ import io.github.kinsleykajiva.ffmpeg.model.AudioMetadata;
  */
 public class MetadataDemo {
     public static void main(String[] args) {
+        
+//        FFmpeg.setBinPath("/mnt/c/Users/Kinsley/IdeaProjects/ffmpeg-with-java-demo/ffmpeg-with-java-lib/ffmpeg-builds/linux64");
+        FFmpeg.setBinPath("/usr/bin");
         String inputPath = "media-files/song.mp3";
         
         System.out.println("=== FFmpeg Metadata Probing Demo ===");

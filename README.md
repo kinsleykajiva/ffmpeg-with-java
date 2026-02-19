@@ -120,6 +120,7 @@ We provide modular demo classes in the `demo` package for easy exploration:
 - **`StreamingDemo`**: Showcases RTP streaming with real-time stats monitoring.
 - **`ValidationDemo`**: Highlights the safety checks for paths, bitrates, and volume.
 - **`ConfigDemo`**: Demonstrates programmatic configuration of FFmpeg binary paths.
+- **`OSSupportDemo`**: Verifies cross-platform detection and path mapping.
 
 ---
 
@@ -130,7 +131,7 @@ We provide modular demo classes in the `demo` package for easy exploration:
 *   Maven
 
 ### Configuration
-By default, the library looks for FFmpeg in the system `PATH` or a bundled `ffmpeg-builds` directory. For production environments, you can explicitly set the binary path:
+By default, the library looks for FFmpeg in the system `PATH` or the correct OS-specific bundled directory in `ffmpeg-builds/` (supports Windows, Linux, and macOS).
 
 ```java
 FFmpeg.setBinPath("C:/Custom/FFmpeg/bin"); 

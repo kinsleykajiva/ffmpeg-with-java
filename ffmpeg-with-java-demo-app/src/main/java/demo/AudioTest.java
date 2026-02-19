@@ -22,6 +22,8 @@ public class AudioTest {
         System.out.println("\n-----------------------------------\n");
         ConfigDemo.main(args);
         System.out.println("\n-----------------------------------\n");
+        OSSupportDemo.main(args);
+        System.out.println("\n-----------------------------------\n");
         TranscodingDemo.main(args);
         System.out.println("\n-----------------------------------\n");
         StreamingDemo.main(args);

@@ -13,7 +13,8 @@ public class ComprehensiveMetadataDemo {
     public static void main(String[] args) {
         String inputPath = "media-files/song.mp3";
         String outputPath = "media-files/song_with_tags.mp3";
-
+        FFmpeg.setBinPath("C:\\Users\\Kinsley\\IdeaProjects\\ffmpeg-with-java-demo\\ffmpeg-with-java-lib\\ffmpeg-builds\\win64\\bin");
+        
         System.out.println("=== FFmpeg Metadata Management Demo ===");
 
         try {
