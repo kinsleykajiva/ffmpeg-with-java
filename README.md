@@ -4,7 +4,7 @@ A production-grade, type-safe, and fluent Java wrapper for FFmpeg and FFprobe. D
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 ### 1. Modern Java 25 Architecture
 *   **Records**: Immutable data carriers for `AudioMetadata` and `EncodingResult`. No more parsing raw strings or maps.
@@ -13,7 +13,7 @@ A production-grade, type-safe, and fluent Java wrapper for FFmpeg and FFprobe. D
 
 ---
 
-## 🧠 Memory & Performance
+## Memory & Performance
 
 This library is built with high-performance media requirements in mind, utilizing **Project Panama (JEP 454)** for ultra-efficient native interactions.
 
@@ -60,7 +60,7 @@ Catch errors before they reach FFmpeg:
 
 ---
 
-## 🛠 Usage Examples
+## Usage Examples
 
 ### Metadata Probing (Panama Powered)
 ```java
@@ -84,9 +84,9 @@ FFmpeg.input("live_input.wav")
 
 ---
 
-## ⚖ Advantages & Downsides
+## Advantages & Downsides
 
-### ✅ Advantages
+### Advantages
 1.  **Type Safety**: Drastically reduces "magic string" errors common in other wrappers.
 2.  **Virtual Thread Architecture**: All callbacks (`onProgress`, `onStreamStats`) are executed on **Virtual Threads** (JEP 444). This ensures that slow listener logic (e.g., database writes or network calls) never blocks the FFmpeg output reader or impacts the process monitoring performance.
 3.  **Modern Concurrency**: Full support for `CompletableFuture` (async) and decoupled event publishing.
@@ -96,7 +96,7 @@ FFmpeg.input("live_input.wav")
 7.  **No Boilerplate**: Binary resolution, error parsing, progress monitoring, and automatic log cleaning (`-hide_banner`) are handled out-of-the-box.
 8.  **Robustness**: Sealed exceptions force developers to handle specific failure modes.
 
-### ❌ Limitations & Downsides
+### Limitations & Downsides
 1.  **RTP Monitoring**: FFmpeg streaming via RTP over UDP is a "fire-and-forget" broadcast protocol. It does **not** provide feedback on connected clients. You cannot detect how many clients are listening or when they drop using standard FFmpeg and RTP.
 2.  **Feature Scope**: Currently focused on **Audio**. Video support is scheduled for a future release.
 3.  **Native Dependency**: Requires `ffmpeg.exe` and `ffprobe.exe` to be present (though it can auto-locate them).
@@ -104,7 +104,7 @@ FFmpeg.input("live_input.wav")
 
 ---
 
-## 🏗 Project Structure
+## Project Structure
 
 *   `FFmpeg.java`: Unified entry point.
 *   `AudioJobBuilder.java`: Fluent configuration engine.
@@ -113,7 +113,7 @@ FFmpeg.input("live_input.wav")
 *   `exception/`: Sealed exception hierarchy.
 *   `model/`: Type-safe records and enums.
 
-### 🏗 Demo Examples
+### Demo Examples
 
 We provide modular demo classes in the `demo` package for easy exploration:
 - **`MetadataDemo`**: Shows Project Panama-based probing of MP3/WAV info.
@@ -126,7 +126,7 @@ We provide modular demo classes in the `demo` package for easy exploration:
 
 ---
 
-### 🚦 Getting Started
+### Getting Started
 
 ### Prerequisites
 *   Java 22+ (Java 25 recommended)
