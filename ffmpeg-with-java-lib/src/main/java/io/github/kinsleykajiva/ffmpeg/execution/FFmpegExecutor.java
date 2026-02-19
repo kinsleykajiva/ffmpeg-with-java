@@ -49,9 +49,7 @@ public class FFmpegExecutor {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         output.append(line).append("\n");
-                        if (!parseAndNotify(line, progressListener, statsListener)) {
-                            System.out.println(line);
-                        }
+                        parseAndNotify(line, progressListener, statsListener);
                     }
                 } catch (Exception ignored) {}
             });

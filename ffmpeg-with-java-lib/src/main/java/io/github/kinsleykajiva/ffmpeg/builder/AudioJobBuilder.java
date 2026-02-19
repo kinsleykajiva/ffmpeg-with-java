@@ -210,6 +210,9 @@ public class AudioJobBuilder {
     private List<String> buildCommand() {
         List<String> cmd = new ArrayList<>();
         cmd.add(io.github.kinsleykajiva.ffmpeg.FFmpegBinary.getFfmpeg().getAbsolutePath());
+        cmd.add("-hide_banner");
+        cmd.add("-loglevel");
+        cmd.add("warning");
         
         // Input Flags
         if (probeSize != null) {
