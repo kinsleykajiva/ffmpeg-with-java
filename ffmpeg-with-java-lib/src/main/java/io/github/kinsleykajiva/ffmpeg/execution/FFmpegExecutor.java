@@ -4,10 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,6 +22,8 @@ public class FFmpegExecutor {
     private static final Pattern PROGRESS_PATTERN = Pattern.compile(
         "(?:frame=\\s*(\\d+)|(?:size|time|out_time)=\\s*\\S+).*bitrate=\\s*([\\d\\.]+)kbits/s.*speed=\\s*([\\d\\.]+)x"
     );
+
+    private static final ExecutorService CALLBACK_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * Executes the command synchronously, with optional timeout.
@@ -124,13 +123,16 @@ public class FFmpegExecutor {
                 double bitrateKbps = Double.parseDouble(matcher.group(2));
                 double speed = Double.parseDouble(matcher.group(3));
 
-                if (progress != null) {
-                    progress.onProgress(0, frame, bitrateKbps);
-                }
+                // Dispatch callbacks on virtual threads to avoid blocking the log reader thread
+                CALLBACK_EXECUTOR.submit(() -> {
+                    if (progress != null) {
+                        progress.onProgress(0, frame, bitrateKbps);
+                    }
+                    if (stats != null) {
+                        stats.onStatsUpdate((long)(bitrateKbps * 1000), speed, 0);
+                    }
+                });
 
-                if (stats != null) {
-                    stats.onStatsUpdate((long)(bitrateKbps * 1000), speed, 0);
-                }
                 return true;
             } catch (Exception ignored) {}
         }

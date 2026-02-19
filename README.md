@@ -88,17 +88,19 @@ FFmpeg.input("live_input.wav")
 
 ### ✅ Advantages
 1.  **Type Safety**: Drastically reduces "magic string" errors common in other wrappers.
-2.  **Modern Concurrency**: Full support for `CompletableFuture` (async) and callbacks.
-3.  **Deterministic Memory**: Project Panama `Arena` usage ensures zero memory leaks in native space.
-4.  **Low Latency**: Highly tuned for real-time media engines (Project Panama overhead is negligible).
-5.  **GC Efficiency**: Off-heap data handling keeps Java heap usage low and stable.
-6.  **No Boilerplate**: Binary resolution, error parsing, and progress monitoring are handled out-of-the-box.
-7.  **Robustness**: Sealed exceptions force developers to handle specific failure modes.
+2.  **Virtual Thread Architecture**: All callbacks (`onProgress`, `onStreamStats`) are executed on **Virtual Threads** (JEP 444). This ensures that slow listener logic (e.g., database writes or network calls) never blocks the FFmpeg output reader or impacts the process monitoring performance.
+3.  **Modern Concurrency**: Full support for `CompletableFuture` (async) and decoupled event publishing.
+4.  **Deterministic Memory**: Project Panama `Arena` usage ensures zero memory leaks in native space.
+5.  **Low Latency**: Highly tuned for real-time media engines (Project Panama overhead is negligible).
+6.  **GC Efficiency**: Off-heap data handling keeps Java heap usage low and stable.
+7.  **No Boilerplate**: Binary resolution, error parsing, progress monitoring, and automatic log cleaning (`-hide_banner`) are handled out-of-the-box.
+8.  **Robustness**: Sealed exceptions force developers to handle specific failure modes.
 
-### ❌ Downsides
-1.  **Feature Scope**: Currently focused on **Audio**. Video support is scheduled for a future release.
-2.  **Native Dependency**: Requires `ffmpeg.exe` and `ffprobe.exe` to be present (though it can auto-locate them).
-3.  **Preview Feature**: Uses Java's Project Panama (Foreign Function API), which requires `--enable-preview` and native access flags.
+### ❌ Limitations & Downsides
+1.  **RTP Monitoring**: FFmpeg streaming via RTP over UDP is a "fire-and-forget" broadcast protocol. It does **not** provide feedback on connected clients. You cannot detect how many clients are listening or when they drop using standard FFmpeg and RTP.
+2.  **Feature Scope**: Currently focused on **Audio**. Video support is scheduled for a future release.
+3.  **Native Dependency**: Requires `ffmpeg.exe` and `ffprobe.exe` to be present (though it can auto-locate them).
+4.  **Preview Feature**: Uses Java's Project Panama (Foreign Function API), which requires `--enable-native-access=ALL-UNNAMED` and `--enable-preview` flags.
 
 ---
 
