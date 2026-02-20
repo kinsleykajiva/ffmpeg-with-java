@@ -1,0 +1,17 @@
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .gitignore
+	modified:   README.md
+	modified:   ffmpeg-with-java-demo-app/pom.xml
+	modified:   ffmpeg-with-java-lib/pom.xml
+	modified:   pom.xml
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	git_result.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

@@ -1,6 +1,25 @@
 # Modern FFmpeg Java (Java 25+)
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.kinsleykajiva/ffmpeg-with-java.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.kinsleykajiva/ffmpeg-with-java)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 A production-grade, type-safe, and fluent Java wrapper for FFmpeg and FFprobe. Designed for modern high-performance media applications, it leverages **Java 25 Records**, **Sealed Classes**, and **Project Panama** for native efficiency and developer ergonomics.
+
+Published on **Maven Central (Sonatype)**.
+
+---
+
+## Installation
+
+### Maven
+Add the following dependency to your `pom.xml`:
+```xml
+<dependency>
+    <groupId>io.github.kinsleykajiva</groupId>
+    <artifactId>ffmpeg-with-java</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
 
 ---
 

@@ -40,3 +40,9 @@ build/
 ffmpeg-with-java-lib/FFmpeg
 ffmpeg-with-java-lib/ffmpeg-builds
 maven.txt
+*.log
+*.bat
+mvn_version.txt
+gpg_version.txt
+gpg_test.txt
+gpg_test_v2.txt
