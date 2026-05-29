@@ -7,7 +7,7 @@ public enum AudioCodec {
     LIBMP3LAME("libmp3lame"),
     LIBOPUS("libopus"),
     AAC("aac"),
-    FLAC("flAC"),
+    FLAC("flac"),
     PCM_S16LE("pcm_s16le"),
     PCM_U8("pcm_u8");
 
